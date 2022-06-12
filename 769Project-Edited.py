@@ -1,8 +1,9 @@
-# importing libraries
 # importing pubnub libraries
 from pubnub.pubnub import PubNub, SubscribeListener, SubscribeCallback, PNStatusCategory
 from pubnub.pnconfiguration import PNConfiguration
 from pubnub.exceptions import PubNubException
+import pubnub
+# importing libraries
 import RPi.GPIO as GPIO
 import time
 from pigpio_dht import DHT11, DHT22
@@ -75,38 +76,43 @@ class MLX90614():
 
 # Define main program code
 if __name__ == '__main__' :
-    # Loop - send text and sleep 3 seconds between texts
-    # Change text to anything you wish, but must be 16 characters or less
-    
-    pnconf = PNConfiguration() # create pubnub_configuration_object
-    pnconf.publish_key = 'pub-c-068b4ef9-a0f2-4893-a721-4df5a511da5d' # set pubnub publish_key
-    pnconf.subscribe_key = 'sub-c-15a4ed18-7a55-11ec-ae36-726521e9de9f' # set pubnub subscibe_key
-    pubnub = PubNub(pnconf) # create pubnub_object using pubnub_configuration_object
-    
-    channel='Xinyu_Chen_769'      # provide pubnub channel_name    
-    m = MLX90614()
-    cur_temp = m.readObjectTemperature()
-    while cur_temp < 35:
-        cur_temp = m.readObjectTemperature()
-        time.sleep(2)
-        print('Current Temperature is %0.2f celusis degree' %cur_temp)
-        data = {         
-                'message': "Temp={0.1f}C %".format(cur_temp)
-                }
-        pubnub.publish().channel(channel).message(data).sync()        
-    try:
-        print('Temperatue reach 30 degree, start fan power!')
-        data = {         
-                'message': 'Temperatue reach 30 degree, start fan power!'
-                }
-        pubnub.publish().channel(channel).message(data).sync()           
-        way(2048)
-        time.sleep(1)
-        way(-2048)
-    except:
-        time.sleep(1)
+ m = MLX90614()
+ cur_temp = m.readObjectTemperature()
+ pnconf = PNConfiguration() # create pubnub_configuration_object
+ pnconf.publish_key = 'pub-c-068b4ef9-a0f2-4893-a721-4df5a511da5d' # set pubnub publish_key
+ pnconf.subscribe_key = 'sub-c-15a4ed18-7a55-11ec-ae36-726521e9de9f' # set pubnub subscibe_key
+ pnconf.uuid = '220099' 
+ pubnub = PubNub(pnconf) # create pubnub_object using pubnub_configuration_object
+ channel='Xinyu_Chen_769'      # provide pubnub channel_name
+ pubnub.subscribe().channels(channel).execute() # subscribe the channel (Runs in background) 
+
+
+ print('connected') # print confirmation msg
+
+
+ while cur_temp < 35:
+       cur_temp = m.readObjectTemperature()
+       time.sleep(2)
+       
+       data = {         
+                'message': "Temp={0:0.1f}C%".format(cur_temp)
+               }
+       pubnub.publish().channel(channel).message(data).sync()
+       print('Current Temperature is %0.2f celusis degree' %cur_temp)
+ try:
+       print('Temperatue reach 35 degree, start fan power!')
+       data = {         
+                'message': 'Temperatue reach 35 degree, start fan power!'
+               }
+       pubnub.publish().channel(channel).message(data).sync()
+       way(2048)
+       time.sleep(1)
+       way(-2048)
+ except:
+       time.sleep(1)
             
      
-    GPIO.cleanup()
+ GPIO.cleanup()
 
 # End of main program code
+
